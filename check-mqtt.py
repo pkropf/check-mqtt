@@ -113,7 +113,7 @@ def on_subscribe(mosq, userdata, mid, granted_qos):
     on_message() will fire when we see that same message
     """
 
-    #print "on_subscribe"
+    #print("on_subscribe")
     if not args.mqtt_readonly:
         (res, mid) =  mosq.publish(args.check_topic, args.mqtt_payload, qos=2, retain=False)
 
@@ -123,7 +123,7 @@ def on_message(mosq, userdata, msg):
     is actually our message and if so, we've completed a round-trip.
     """
 
-    #print "on_message", msg.topic, str(msg.payload)
+    #print("on_message", msg.topic, str(msg.payload))
 
     global message
     global status
@@ -141,7 +141,7 @@ def on_message(mosq, userdata, msg):
                 payload = ''
                 pass
 
-    #print "on_message", msg.topic, str(payload)
+    #print("on_message", msg.topic, str(payload))
     
     elapsed = (time.time() - userdata['start_time'])
     userdata['have_response'] = True
@@ -157,7 +157,7 @@ def on_message(mosq, userdata, msg):
             try:
                 if eval(args.critical):
                     status = Status.CRITICAL
-            except:
+            except Exception as e:
                 status = Status.CRITICAL
                 message = "critical expression error '{}'".format(args.critical)
                 pass
@@ -165,7 +165,7 @@ def on_message(mosq, userdata, msg):
             try:
                 if eval(args.warning):
                     status = Status.WARNING
-            except:
+            except Exception as e:
                 status = Status.CRITICAL
                 message = "warning expression error '{}'".format(args.warning)
                 pass
@@ -176,11 +176,11 @@ def on_message(mosq, userdata, msg):
                 status = Status.OK
             if (args.mqtt_operator == 'gt' or args.mqtt_operator == 'greaterthan') and float(payload) > float(args.mqtt_value):
                 status = Status.OK
-            if (args.mqtt_operator == 'eq' or args.mqtt_operator == 'equal') and str(payload) == args.mqtt_value:
+            if (args.mqtt_operator == 'eq' or args.mqtt_operator == 'equal') and str(payload.decode()) == args.mqtt_value:
                 status = Status.OK
-            if (args.mqtt_operator == 'ct' or args.mqtt_operator == 'contains') and str(payload).find(args.mqtt_value) != -1:
+            if (args.mqtt_operator == 'ct' or args.mqtt_operator == 'contains') and str(payload.decode()).find(args.mqtt_value) != -1:
                 status = Status.OK
-        except:
+        except  Exception as e:
             status = Status.CRITICAL
             pass
 
@@ -197,7 +197,7 @@ def exitus(status=Status.OK, message="all is well"):
     to status
     """
 
-    print "%s - %s" % (nagios_codes[status], message)
+    print("%s - %s" % (nagios_codes[status], message))
     sys.exit(status)
 
 parser = argparse.ArgumentParser(description='Nagios/Icinga plugin for checking connectivity or status of MQTT clients on an MQTT broker.',
@@ -234,7 +234,7 @@ parser.add_argument('-V', '--version',  action='version', version=PROG)
 
 args = parser.parse_args()
 
-#print args
+#print(args)
 
 if args.mqtt_payload.startswith('!'):
     try:
@@ -282,7 +282,7 @@ if args.mqtt_username is not None:
 
 try:
     mqttc.connect(args.mqtt_host, args.mqtt_port, args.keepalive)
-except Exception, e:
+except Exception as e:
     status = Status.CRITICAL
     message = "Connection to %s:%d failed: %s" % (args.mqtt_host, args.mqtt_port, str(e))
     exitus(status, message)
